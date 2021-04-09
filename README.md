@@ -54,7 +54,7 @@ It uses the MAC addresses provided by the user (as script arguments) to make a s
 
      Some full-python approaches, like the one used by Home Assistant, need to create a user with Admin priviledges, a security weakness that I couldn't accept even if the permissions for that user can be limited.
 
-     Infact there is no way lo limit the access to the / photo directory for Admin-rank users, a problem that will surely be fixed with DSM7 but that can't be ignored for now.
+     Infact there is no way lo limit the access to the /photo directory for Admin-rank users, a problem that will surely be fixed with DSM7 but that can't be ignored for now.
 
 
 
