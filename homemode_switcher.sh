@@ -107,7 +107,7 @@ function switchHomemode()
 function macs_check()
 {	
 	matching_macs=0
-	arp_table=$(arp -a|awk -F'[ ()]' 'BEGIN{OFS="_"} {print $3,$6}')
+	arp_table=$(arp -a|awk -F'[ ()]' 'BEGIN{OFS="_"} {print $3,$6}');
 	echo "Hosts found in your network:"
 	for host in $arp_table; do
 		host_ip=$(echo $host|awk -F'[_]' '{print $1}')
