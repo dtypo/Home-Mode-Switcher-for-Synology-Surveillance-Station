@@ -113,7 +113,7 @@ function macs_check()
 		host_ip=$(echo $host|awk -F'[_]' '{print $1}')
 		host_mac=$(echo $host|awk -F'[_]' '{print $2}')
 		if [ "$host_mac" != "<incomplete>" ] && [[ ! "$BLACKLIST" =~ "$host_mac" ]] && [[ ! "$BLACKLIST" =~ "$host_ip" ]]; then
-			ping_failed=$(ping -i 0.1 -c 1 $host_ip|awk '/100% packet loss/{ print $0 }')
+			ping_failed=$(ping -i 0.2 -c 1 $host_ip|awk '/100% packet loss/{ print $0 }')
 			if [ -z "$ping_failed" ]; then
 				echo $host
 				for authorized_mac in $MACS
