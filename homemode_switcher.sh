@@ -114,9 +114,9 @@ function macs_check()
 		host_mac=$(echo $host|awk -F'[_]' '{print $2}')
 		if [ "$host_mac" != "<incomplete>" ] && [[ ! "$BLACKLIST" =~ "$host_mac" ]] && [[ ! "$BLACKLIST" =~ "$host_ip" ]]; then
 			packet_loss=$(ping -i 0.2 -c 2 $host_ip|awk '/packets/{ print $0 }'|tr ',' '\n'|grep loss|awk -F'[%]' '{print $1}')
-			echo -e "\n$packet_loss% of packets lost for $host_ip"
+			echo -e "\n >$packet_loss% of packets lost pinging $host_ip"
 			if [ "$packet_loss" -le "50" ]; then
-				echo "$host will be considered as active"
+				echo "   $host_ip ($host_mac) will be considered as active"
 				for authorized_mac in $MACS
 				do
 					if [ "$host_mac" == "$authorized_mac" ]; then
@@ -125,7 +125,7 @@ function macs_check()
 					fi
 				done
 			else
-				echo "$host (but doesn't ping! so won't be considered as active)"
+				echo "   $host_ip ($host_mac) (but doesn't ping! so won't be considered as active)"
 			fi
 		fi
 	done
