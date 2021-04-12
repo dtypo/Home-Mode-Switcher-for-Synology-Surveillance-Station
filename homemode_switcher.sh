@@ -58,10 +58,10 @@ END
 function switchHomemode()
 {
 	if [ -z "$SYNO_SECRET_KEY" ]; then
-		echo "No 2FA secret key detected"
+		echo -e "\nNo 2FA secret key detected"
 		login_output=$(wget -q --keep-session-cookies --save-cookies $COOKIESFILE -O- "http://${SYNO_URL}//webapi/auth.cgi?api=SYNO.API.Auth&method=Login&version=3&account=${SYNO_USER}&passwd=${SYNO_PASS}&session=SurveillanceStation"|awk -F'[][{}]' '{ print $4 }'|awk -F':' '{ print $2 }');
 	else
-		echo "2FA secret key detected, I'm using it"
+		echo -e "\n2FA secret key detected, I'm using it"
 		totp_calculator
 		login_output=$(wget -q --keep-session-cookies --save-cookies $COOKIESFILE -O- "http://${SYNO_URL}//webapi/auth.cgi?api=SYNO.API.Auth&method=Login&version=3&account=${SYNO_USER}&passwd=${SYNO_PASS}&otp_code=${SYNO_OTP}&session=SurveillanceStation"|awk -F'[][{}]' '{ print $4 }'|awk -F':' '{ print $2 }');
 	fi
@@ -108,28 +108,29 @@ function macs_check()
 {	
 	matching_macs=0
 	arp_table=$(arp -a|awk -F'[ ()]' 'BEGIN{OFS="_"} {print $3,$6}')
-	echo "Hosts found in your network:"
+	echo -e "\nHosts found in your network:"
 	for host in $arp_table; do
 		host_ip=$(echo $host|awk -F'[_]' '{print $1}')
 		host_mac=$(echo $host|awk -F'[_]' '{print $2}')
 		if [ "$host_mac" != "<incomplete>" ] && [[ ! "$BLACKLIST" =~ "$host_mac" ]] && [[ ! "$BLACKLIST" =~ "$host_ip" ]]; then
 			packet_loss=$(ping -i 0.2 -c 2 $host_ip|awk '/packets/{ print $0 }'|tr ',' '\n'|grep loss|awk -F'[%]' '{print $1}')
-			echo "$packet_loss% of packets lost for $host_ip"
+			echo -e "\n$packet_loss% of packets lost for $host_ip"
 			if [ "$packet_loss" -le "50" ]; then
 				echo "$host will be considered as active"
 				for authorized_mac in $MACS
 				do
 					if [ "$host_mac" == "$authorized_mac" ]; then
 						let "matching_macs+=1"
-						echo "One match between active MACs and authorized MACs found: $host_mac"
+						echo -e "\nOne match between active MACs and authorized MACs found: $host_mac"
 					fi
 				done
 			else
-				echo "$host (but doesn't ping! so won't be considered)"
+				echo "$host (but doesn't ping! so won't be considered as active)"
 			fi
 		fi
 	done
 }
+
 
 #Check for the list of MAC addresses authorized to activate Homemode passed as script arguments
 if [ $# -eq 0 ]; then
@@ -146,20 +147,24 @@ else
 fi
 
 echo "[Previous state]Am I home? ${homestate_prev}" 
-echo "MACs authorized to activate Homemode: $MACS"
+echo -e "\nMACs authorized to activate Homemode: $MACS"
+
 
 #Check for currently active MAC addresses and comparison with the provided authorized MACs
+
 macs_check
-echo "Total matches: $matching_macs"
+
+echo -e "\nTotal matches: $matching_macs"
 
 if [ "$matching_macs" -eq "0" ]; then
 	homestate="false"
 elif [ "$matching_macs" -gt "0" ]; then
 	homestate="true"
 fi
-echo "[Current state]Am I home? ${homestate}"
+echo -e "\n[Current state]Am I home? ${homestate}"
 
 if [ $homestate_prev_file != $homestate ]; then
+	echo "Switching Home Mode"
 	switchHomemode
 else
 	echo "No changes made"
