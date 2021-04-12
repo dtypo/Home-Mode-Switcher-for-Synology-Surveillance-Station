@@ -107,15 +107,16 @@ function switchHomemode()
 function macs_check()
 {	
 	matching_macs=0
-	arp_table=$(arp -a|awk -F'[ ()]' 'BEGIN{OFS="_"} {print $3,$6}');
+	arp_table=$(arp -a|awk -F'[ ()]' 'BEGIN{OFS="_"} {print $3,$6}')
 	echo "Hosts found in your network:"
 	for host in $arp_table; do
 		host_ip=$(echo $host|awk -F'[_]' '{print $1}')
 		host_mac=$(echo $host|awk -F'[_]' '{print $2}')
 		if [ "$host_mac" != "<incomplete>" ] && [[ ! "$BLACKLIST" =~ "$host_mac" ]] && [[ ! "$BLACKLIST" =~ "$host_ip" ]]; then
-			ping_failed=$(ping -i 0.2 -c 1 $host_ip|awk '/100% packet loss/{ print $0 }')
-			if [ -z "$ping_failed" ]; then
-				echo $host
+			packet_loss=$(ping -i 0.2 -c 3 $host_ip|awk '/packets/{ print $0 }'|tr ',' '\n'|grep loss|awk -F'[%]' '{print $1}')
+			echo "$packet_loss% of packets lost for $host_ip"
+			if [ "$packet_loss" -le "67" ]; then
+				echo "$host will be considered as active"
 				for authorized_mac in $MACS
 				do
 					if [ "$host_mac" == "$authorized_mac" ]; then
