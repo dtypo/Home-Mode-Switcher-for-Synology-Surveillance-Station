@@ -16,19 +16,23 @@ BLACKLISTED_IPS_OR_MACS="a0:b1:c2:d3:e4:f5 a1:b2:c3:d4:e5:f6 192.168.1.255"
 ######################################
 
 ARGUMENTS=$@
-MACS=$(echo $ARGUMENTS | tr '[:upper:]' '[:lower:]');
-BLACKLIST=$(echo $BLACKLISTED_IPS_OR_MACS | tr '[:upper:]' '[:lower:]');
+MACS=$(echo $ARGUMENTS | tr '[:lower:]' '[:upper:]');
 
 ID="$RANDOM";
 COOKIESFILE="$0_cookies_$ID";
 AMIHOME="$0_AMIHOME";
 
+
 function totp_calculator() {
+	#test_python=$(python3 --version|awk '{print $1}')
 	test_python="/$PYTHON_VOLUME/@appstore/py3k/usr/local/bin/python3"
 	test_pip="/$PYTHON_VOLUME/@appstore/py3k/usr/local/bin/pip"
+	#test_pyotp=$(python3 /$PYTHON_VOLUME/@appstore/py3k/usr/local/bin/pip list|grep pyotp|awk '{ if ($1=="pyotp") print $1 }')
 	test_pyotp="/$PYTHON_VOLUME/@appstore/py3k/usr/local/lib/python3.8/site-packages/pyotp"
+	#if [ "$test_python" == "Python" ]; then
 	if [ -f "$test_python" ]; then
 		if [ -f "$test_pip" ]; then
+			#if [ "$test_pyotp" == "pyotp" ]; then	
 			if [ -d "$test_pyotp" ]; then
 				SYNO_OTP="$(python3 - <<END
 import pyotp
@@ -41,19 +45,18 @@ END
 				echo "Try with \"python3 /$PYTHON_VOLUME/@appstore/py3k/usr/local/bin/pip install pyotp\""
 				exit 1;
 			fi
-			
 		else
 			echo "Pip is not installed"
 			echo "Try with \"wget https://bootstrap.pypa.io/get-pip.py -O /tmp/get-pip.py\" followed by \"sudo python3 /tmp/get-pip.py\""
 			exit 1;
 		fi
-		
 	else
 		echo "Python3 is not installed"
 		echo "Install it from the Package Center"
 		exit 1;
 	fi
 }
+
 
 function switchHomemode()
 {
@@ -104,55 +107,71 @@ function switchHomemode()
 	rm $COOKIESFILE;
 }
 
-function macs_check()
+
+function macs_check_v1()
 {	
 	matching_macs=0
-	arp_table=$(arp -a|awk -F'[ ()]' 'BEGIN{OFS="_"} {print $3,$6}')
+	interface=$(route|grep default|awk '{print $8}')
+	ip_pool=$(echo $SYNO_URL|awk -F"." 'BEGIN{OFS="."} {print $1, $2, $3".0/24"}')
+	echo "Scanning hosts in the same network of the Synology NAS..."
+	nmap_scan=$(nmap -sn --disable-arp-ping $ip_pool|awk '/MAC/{print $3}')
 	echo -e "\nHosts found in your network:"
-	for host in $arp_table; do
-		host_ip=$(echo $host|awk -F'[_]' '{print $1}')
-		host_mac=$(echo $host|awk -F'[_]' '{print $2}')
-		if [ "$host_mac" != "<incomplete>" ] && [[ ! "$BLACKLIST" =~ "$host_mac" ]] && [[ ! "$BLACKLIST" =~ "$host_ip" ]]; then
-			packet_loss=$(ping -i 0.2 -c 2 $host_ip|awk '/packets/{ print $0 }'|tr ',' '\n'|grep loss|awk -F'[%]' '{print $1}')
-			echo -e "\n >$packet_loss% of packets lost pinging $host_ip"
-			if [ "$packet_loss" -le "50" ]; then
-				echo "   $host_ip ($host_mac) will be considered as active"
-				for authorized_mac in $MACS
-				do
-					if [ "$host_mac" == "$authorized_mac" ]; then
-						let "matching_macs+=1"
-						echo -e "\nOne match between active MACs and authorized MACs found: $host_mac"
-					fi
-				done
-			else
-				echo "   $host_ip ($host_mac) (but doesn't ping! so won't be considered as active)"
+	for host in $nmap_scan; do
+		echo -e "\n$host"
+		for authorized_mac in $MACS
+		do
+			if [ "$host" == "$authorized_mac" ]; then
+				let "matching_macs+=1"
+				echo "This MAC address matches with one of the authorized MAC addresses!"
 			fi
-		fi
+		done
+	done
+}
+
+function macs_check_v2()
+{	
+	matching_macs=0
+	interface=$(route|grep default|awk '{print $8}')
+	ip_pool=$(echo $SYNO_URL|awk -F"." 'BEGIN{OFS="."} {print $1, $2, $3".0/24"}')
+	echo "Scanning hosts in the same network of the Synology NAS..."
+	nmap_scan=$(nmap --traceroute --disable-arp-ping $ip_pool|awk '/MAC/{print $3}')
+	echo -e "\nHosts found in your network:"
+	for host in $nmap_scan; do
+		echo -e "\n$host"
+		for authorized_mac in $MACS
+		do
+			if [ "$host" == "$authorized_mac" ]; then
+				let "matching_macs+=1"
+				echo "This MAC address matches with one of the authorized MAC addresses!"
+			fi
+		done
 	done
 }
 
 
 #Check for the list of MAC addresses authorized to activate Homemode passed as script arguments
+
 if [ $# -eq 0 ]; then
 	echo "MAC address or addresses missing"
 	exit 1;
 fi
 
+
 #Check for previous state stored in a file for avoiding continuous SynoAPI calls
+
 if [ -f $AMIHOME ]; then
 	homestate_prev_file=$(<$AMIHOME)
 else
 	echo "unknown">$AMIHOME
 	homestate_prev_file=$(<$AMIHOME)
 fi
-
-echo "[Previous state]Am I home? ${homestate_prev}" 
-echo -e "\nMACs authorized to activate Homemode: $MACS"
+echo "[Previous State] Am I home? $homestate_prev_file" 
+echo "MAC addresses authorized to enable the Homemode: $MACS"
 
 
 #Check for currently active MAC addresses and comparison with the provided authorized MACs
 
-macs_check
+macs_check_v1
 
 echo -e "\nTotal matches: $matching_macs"
 
@@ -161,10 +180,10 @@ if [ "$matching_macs" -eq "0" ]; then
 elif [ "$matching_macs" -gt "0" ]; then
 	homestate="true"
 fi
-echo -e "\n[Current state]Am I home? ${homestate}"
+echo "[Current State] Am I home? $homestate"
 
 if [ $homestate_prev_file != $homestate ]; then
-	echo "Switching Home Mode"
+	echo "Switching Home Mode according to the [Current State]..."
 	switchHomemode
 else
 	echo "No changes made"
