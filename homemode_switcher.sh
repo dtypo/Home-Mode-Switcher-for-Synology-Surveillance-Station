@@ -6,8 +6,7 @@ SYNO_PASS="password";
 SYNO_URL="192.168.1.111:port";
 ########## 2FA configuration (optional)
 SYNO_SECRET_KEY="";
-PYTHON_VOLUME="volume1"
-BLACKLISTED_IPS_OR_MACS="a0:b1:c2:d3:e4:f5 a1:b2:c3:d4:e5:f6 192.168.1.255"
+PYTHON_VOLUME="volume1";
 ######################################
 ######################################
 ######################################
