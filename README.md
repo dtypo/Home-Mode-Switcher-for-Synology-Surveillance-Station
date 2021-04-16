@@ -124,7 +124,7 @@ The following instructions refers to the use of the script on the Synology NAS i
 
      Just use the newly created user to compile the `SYNO_USER` and `SYNO_PASS` fields, then insert the IP and the port used by the NAS.
 
-     `[OPTIONAL]` If your NAS is configured with 2FA, insert the just obtained secret key in the field `SYNO_SECRET_KEY` (inside the quotes → "") and if require edit the volume in which Python, pip and pyotp have been installed; if not leave those fields totally blank.
+     `[OPTIONAL]` If your NAS is configured with 2FA, insert the just obtained secret key in the field `SYNO_SECRET_KEY` (inside the quotes → "") and, if required, edit the volume in which Python, pip and pyotp have been installed; if not leave those fields totally blank.
 
 
 
