@@ -28,9 +28,9 @@ It uses the MAC addresses provided by the user (as script arguments) to make a s
 
 - **COMPATIBLE WITH EVERY MODEM/ROUTER ON THE MARKET**
 
-     Unlike many other similar projects, this script doesn't use any modem/router API to obtain a list of the active hosts in the LAN.
+     Unlike many other similar projects, this script doesn't use any modem/router API or specific features to obtain a list of the active hosts in the LAN.
 
-     Instead, a simple mix of ARP and PING is used for this purposec (NMAP has been tested, too, but its results were not precise enough).
+     Instead, NMAP is used for this purpose.
 
 
 
@@ -54,7 +54,7 @@ It uses the MAC addresses provided by the user (as script arguments) to make a s
 
      Some full-python approaches, like the one used by Home Assistant, need to create a user with Admin priviledges, a security weakness that I couldn't accept even if the permissions for that user can be limited.
 
-     Infact there is no way lo limit the access to the /photo directory for Admin-rank users, a problem that will surely be fixed with DSM7 but that can't be ignored for now.
+     Infact there is no way lo limit the access to the /photo directory for admin-ranked users, a problem that will surely be fixed with DSM7 but that can't be ignored for now.
 
 
 
@@ -95,11 +95,17 @@ The following instructions refers to the use of the script on the Synology NAS i
 
 
 
-3. **`[OPTIONAL]` INSTALL PYTHON, PIP AND PYOTP**
+3. **INSTALL SYNOCLI NETWORK TOOLS**
+
+     Install `SynoCli Network Tools` from the Package Center after adding the [Synocommunity Repositories](https://synocommunity.com/)
+
+
+
+4. **`[OPTIONAL]` INSTALL PYTHON, PIP AND PYOTP**
 
      If your NAS is configured with 2FA, continue to read, if not jump to point 5.
 
-     Install Python3 from the Package Center, then login to the NAS via SSH (use Putty on Windows) and give the following commands:
+     Install `Python3` from the Package Center, then login to the NAS via SSH (use Putty on Windows) and give the following commands:
 
        sudo -i
        wget https://bootstrap.pypa.io/get-pip.py -O /tmp/get-pip.py 
@@ -110,7 +116,7 @@ The following instructions refers to the use of the script on the Synology NAS i
      
      
      
-4. **EDIT THE SCRIPT**
+5. **EDIT THE SCRIPT**
 
      Open the script with your favourite text editor in order to configure it.
 
@@ -120,13 +126,9 @@ The following instructions refers to the use of the script on the Synology NAS i
 
      `[OPTIONAL]` If your NAS is configured with 2FA, insert the just obtained secret key in the field `SYNO_SECRET_KEY` (inside the quotes → "") and if require edit the volume in which Python, pip and pyotp have been installed; if not leave those fields totally blank.
 
-     `[OPTIONAL]` If, for whatever reason (for example devices not pinging that slow down the script), you need to block a MAC address or an IP address, insert the MAC or the IP in the `BLACKLISTED_IPS_OR_MACS` field (use a space as separator).
-     
-     This way those IPs/MACs won't be pinged even if present in the arp table.
 
 
-
-5. **PLACE THE SCRIPT WHEREVER YOU DESIRE IN YOUR NAS.**
+6. **PLACE THE SCRIPT WHEREVER YOU DESIRE IN YOUR NAS.**
 
      Copy the file `homemode_switcher.sh` in your preferred path on the NAS.
 
@@ -134,7 +136,7 @@ The following instructions refers to the use of the script on the Synology NAS i
 
 
 
-6. **GIVE THE EXECUTION PERMITS** 
+7. **GIVE THE EXECUTION PERMITS** 
 
      Using SSH, give the execution permits to the script with a:
 
@@ -142,7 +144,7 @@ The following instructions refers to the use of the script on the Synology NAS i
 
 
 
-7. **TAKE NOTE OF THE AUTHORIZED MAC ADDRESSES**
+8. **TAKE NOTE OF THE AUTHORIZED MAC ADDRESSES**
 
      You can choose one or mode devices that will be able to trigger the Home Mode.
 
@@ -150,7 +152,7 @@ The following instructions refers to the use of the script on the Synology NAS i
 
 
 
-8. **SCHEDULE THE EXECUTION OF THE SCRIPT**
+9. **SCHEDULE THE EXECUTION OF THE SCRIPT**
 
      ![task](https://user-images.githubusercontent.com/40309637/114242173-bec43b80-998a-11eb-9fc7-20ddf36b390c.png)
 
