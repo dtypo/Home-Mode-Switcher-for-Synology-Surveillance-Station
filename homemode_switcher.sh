@@ -127,6 +127,7 @@ function macs_check_v1()
 	done
 }
 
+
 function macs_check_v2()
 {	
 	matching_macs=0
