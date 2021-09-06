@@ -6,7 +6,6 @@ SYNO_PASS="password";
 SYNO_URL="192.168.1.111:port";
 ########## 2FA configuration (optional)
 SYNO_SECRET_KEY="";
-PYTHON_VOLUME="volume1";
 ######################################
 ######################################
 ######################################
@@ -23,35 +22,22 @@ AMIHOME="$0_AMIHOME";
 
 
 function totp_calculator() {
-	#test_python=$(python3 --version|awk '{print $1}')
-	test_python="/$PYTHON_VOLUME/@appstore/py3k/usr/local/bin/python3"
-	test_pip="/$PYTHON_VOLUME/@appstore/py3k/usr/local/bin/pip"
-	#test_pyotp=$(python3 /$PYTHON_VOLUME/@appstore/py3k/usr/local/bin/pip list|grep pyotp|awk '{ if ($1=="pyotp") print $1 }')
-	test_pyotp="/$PYTHON_VOLUME/@appstore/py3k/usr/local/lib/python3.8/site-packages/pyotp"
-	#if [ "$test_python" == "Python" ]; then
-	if [ -f "$test_python" ]; then
-		if [ -f "$test_pip" ]; then
-			#if [ "$test_pyotp" == "pyotp" ]; then	
-			if [ -d "$test_pyotp" ]; then
-				SYNO_OTP="$(python3 - <<END
+	test_pip="/usr/lib/python3.8/site-packages/pip"
+	test_pyotp="/usr/lib/python3.8/site-packages/pyotp"
+	if [ -d "$test_pip" ]; then
+		if [ -d "$test_pyotp" ]; then
+			SYNO_OTP="$(python3 - <<END
 import pyotp
 totp = pyotp.TOTP("$SYNO_SECRET_KEY")
 print(totp.now())
 END
 )"			
-			else
-				echo "Pyotp module is not installed"
-				echo "Try with \"python3 /$PYTHON_VOLUME/@appstore/py3k/usr/local/bin/pip install pyotp\""
-				exit 1;
-			fi
 		else
-			echo "Pip is not installed"
-			echo "Try with \"wget https://bootstrap.pypa.io/get-pip.py -O /tmp/get-pip.py\" followed by \"sudo python3 /tmp/get-pip.py\""
+			echo "Pyotp module is not installed"
 			exit 1;
 		fi
 	else
-		echo "Python3 is not installed"
-		echo "Install it from the Package Center"
+		echo "Pip is not installed"
 		exit 1;
 	fi
 }
@@ -61,11 +47,11 @@ function switchHomemode()
 {
 	if [ -z "$SYNO_SECRET_KEY" ]; then
 		echo -e "\nNo 2FA secret key detected"
-		login_output=$(wget -q --keep-session-cookies --save-cookies $COOKIESFILE -O- "http://${SYNO_URL}//webapi/auth.cgi?api=SYNO.API.Auth&method=Login&version=3&account=${SYNO_USER}&passwd=${SYNO_PASS}&session=SurveillanceStation"|awk -F'[][{}]' '{ print $4 }'|awk -F':' '{ print $2 }');
+		login_output=$(wget -q --keep-session-cookies --save-cookies $COOKIESFILE -O- "http://${SYNO_URL}//webapi/auth.cgi?api=SYNO.API.Auth&method=login&version=3&account=${SYNO_USER}&passwd=${SYNO_PASS}&session=SurveillanceStation"|awk -F'[][{}]' '{ print $4 }'|awk -F':' '{ print $2 }');
 	else
 		echo -e "\n2FA secret key detected, I'm using it"
 		totp_calculator
-		login_output=$(wget -q --keep-session-cookies --save-cookies $COOKIESFILE -O- "http://${SYNO_URL}//webapi/auth.cgi?api=SYNO.API.Auth&method=Login&version=3&account=${SYNO_USER}&passwd=${SYNO_PASS}&otp_code=${SYNO_OTP}&session=SurveillanceStation"|awk -F'[][{}]' '{ print $4 }'|awk -F':' '{ print $2 }');
+		login_output=$(wget -q --keep-session-cookies --save-cookies $COOKIESFILE -O- "http://${SYNO_URL}//webapi/auth.cgi?api=SYNO.API.Auth&method=login&version=3&account=${SYNO_USER}&passwd=${SYNO_PASS}&otp_code=${SYNO_OTP}&session=SurveillanceStation"|awk -F'[][{}]' '{ print $4 }'|awk -F':' '{ print $2 }');
 	fi
 	if [ "$login_output" == "true" ]; then 
 		echo "Login to Synology successfull";
