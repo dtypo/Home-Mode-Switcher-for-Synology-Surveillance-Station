@@ -101,16 +101,16 @@ The following instructions refers to the use of the script on the Synology NAS i
 
 
 
-4. **`[OPTIONAL]` INSTALL PYTHON, PIP AND PYOTP**
+4. **`[OPTIONAL]` INSTALL PIP AND PYOTP**
 
      If your NAS is configured with 2FA, continue to read, if not jump to point 5.
 
-     Install `Python3` from the Package Center, then login to the NAS via SSH (use Putty on Windows) and give the following commands:
+     Login to the NAS via SSH (use Putty on Windows) and give the following commands:
 
        sudo -i
-       wget https://bootstrap.pypa.io/get-pip.py -O /tmp/get-pip.py 
-       python3 /tmp/get-pip.py
-       python3 /volume1/@appstore/py3k/usr/local/bin/pip install pyotp
+       python3 -m ensurepip
+       python3 -m pip install --upgrade pip
+       python3 -m pip install pyotp
 
      *Please note*: the command `sudo -i` will give you root access; for this reason it's required you to reinsert the same password of your main admin-ranked account.
      
