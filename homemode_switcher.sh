@@ -114,27 +114,6 @@ function macs_check_v1()
 }
 
 
-function macs_check_v2()
-{	
-	matching_macs=0
-	interface=$(route|grep default|awk '{print $8}')
-	ip_pool=$(echo $SYNO_URL|awk -F"." 'BEGIN{OFS="."} {print $1, $2, $3".0/24"}')
-	echo "Scanning hosts in the same network of the Synology NAS..."
-	nmap_scan=$(nmap --traceroute --disable-arp-ping $ip_pool|awk '/MAC/{print $3}')
-	echo -e "\nHosts found in your network:"
-	for host in $nmap_scan; do
-		echo -e "\n$host"
-		for authorized_mac in $MACS
-		do
-			if [ "$host" == "$authorized_mac" ]; then
-				let "matching_macs+=1"
-				echo "This MAC address matches with one of the authorized MAC addresses!"
-			fi
-		done
-	done
-}
-
-
 #Check for the list of MAC addresses authorized to activate Homemode passed as script arguments
 
 if [ $# -eq 0 ]; then
