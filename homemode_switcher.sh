@@ -47,39 +47,43 @@ function switchHomemode()
 {
 	if [ -z "$SYNO_SECRET_KEY" ]; then
 		echo -e "\nNo 2FA secret key detected"
-		login_output=$(wget -q --keep-session-cookies --save-cookies $COOKIESFILE -O- "http://${SYNO_URL}//webapi/auth.cgi?api=SYNO.API.Auth&method=login&version=3&account=${SYNO_USER}&passwd=${SYNO_PASS}&session=SurveillanceStation"|awk -F'[][{}]' '{ print $4 }'|awk -F':' '{ print $2 }');
+		login_output=$(wget -q --keep-session-cookies --save-cookies $COOKIESFILE -O- "http://${SYNO_URL}//webapi/auth.cgi?api=SYNO.API.Auth&method=login&version=3&account=${SYNO_USER}&passwd=${SYNO_PASS}&session=SurveillanceStation");
 	else
 		echo -e "\n2FA secret key detected, I'm using it"
 		totp_calculator
-		login_output=$(wget -q --keep-session-cookies --save-cookies $COOKIESFILE -O- "http://${SYNO_URL}//webapi/auth.cgi?api=SYNO.API.Auth&method=login&version=3&account=${SYNO_USER}&passwd=${SYNO_PASS}&otp_code=${SYNO_OTP}&session=SurveillanceStation"|awk -F'[][{}]' '{ print $4 }'|awk -F':' '{ print $2 }');
+		login_output=$(wget -q --keep-session-cookies --save-cookies $COOKIESFILE -O- "http://${SYNO_URL}//webapi/auth.cgi?api=SYNO.API.Auth&method=login&version=3&account=${SYNO_USER}&passwd=${SYNO_PASS}&otp_code=${SYNO_OTP}&session=SurveillanceStation");
 	fi
-	if [ "$login_output" == "true" ]; then 
+	login_result=$(echo ${login_output##*,*,});
+	if [ "$login_result" == "\"success\":true}" ]; then 
 		echo "Login to Synology successfull";
-		homestate_prev_syno=$(wget -q --load-cookies $COOKIESFILE -O- "http://${SYNO_URL}//webapi/entry.cgi?api=SYNO.SurveillanceStation.HomeMode&version=1&method=GetInfo&need_mobiles=true"|awk -F',' '{ print $124 }'|awk -F':' '{ print $2 }');
-		if [ "$homestate" == "true" ] && [ "$homestate_prev_syno" != "$homestate" ]; then
+		syno_api_query=$(wget -q --load-cookies $COOKIESFILE -O- "http://${SYNO_URL}//webapi/entry.cgi?api="SYNO.SurveillanceStation.HomeMode"&version="1"&method="GetInfo"&need_mobiles=true");
+		IFS=','
+		read -a strarr <<< "$syno_api_query"
+		previous_homestate_from_syno=$(echo ${strarr[145]});
+		if [ "$homestate" == "\"on\":true" ] && [ "$previous_homestate_from_syno" != "$homestate" ]; then
 			echo "Synology is NOT in Homemode but you're at home... Let's fix it"
-			switch_output=$(wget -q --load-cookies $COOKIESFILE -O- "http://${SYNO_URL}//webapi/entry.cgi?api=SYNO.SurveillanceStation.HomeMode&version=1&method=Switch&on=true");
-			if [ "$switch_output" = '{"success":true}' ]; then  
+			syno_api_switch_output=$(wget -q --load-cookies $COOKIESFILE -O- "http://${SYNO_URL}//webapi/entry.cgi?api=SYNO.SurveillanceStation.HomeMode&version=1&method=Switch&on=true");
+			if [ "$syno_api_switch_output" == '{"success":true}' ]; then  
 				echo "Homemode correctly activated"; 
 				echo $homestate>$AMIHOME
 			else
 				echo "Something went wrong during the activation of Homemode"
 				exit 1;
 			fi	
-		elif [ "$homestate" == "false" ] && [ "$homestate_prev_syno != $homestate" ]; then
+		elif [ "$homestate" == "\"on\":false" ] && [ "$previous_homestate_from_syno != $homestate" ]; then
 			echo "Synology is in Homemode but you're NOT at home... Let's fix it"
-			switch_output=$(wget -q --load-cookies $COOKIESFILE -O- "http://${SYNO_URL}//webapi/entry.cgi?api=SYNO.SurveillanceStation.HomeMode&version=1&method=Switch&on=false");
-			if [ "$switch_output" = '{"success":true}' ]; then  
+			syno_api_switch_output=$(wget -q --load-cookies $COOKIESFILE -O- "http://${SYNO_URL}//webapi/entry.cgi?api=SYNO.SurveillanceStation.HomeMode&version=1&method=Switch&on=false");
+			if [ "$syno_api_switch_output" = '{"success":true}' ]; then  
 				echo "Homemode correctly deactivated"; 
 				echo $homestate>$AMIHOME
 			else
 				echo "Something went wrong during the deactivation of Homemode"
 				exit 1;
 			fi	
-		elif [ "$homestate" == "false" ] && [ "$homestate_prev_syno == $homestate" ]; then
+		elif [ "$homestate" == "\"on\":false" ] && [ "$previous_homestate_from_syno == $homestate" ]; then
 			echo "Synology is NOT in Homemode and you're NOT at home...Fixing only the AMIHOME file";
 			echo $homestate>$AMIHOME
-		elif [ "$homestate" == "true" ] && [ "$homestate_prev_syno == $homestate" ]; then
+		elif [ "$homestate" == "\"on\":true" ] && [ "$previous_homestate_from_syno == $homestate" ]; then
 			echo "Synology is in Homemode and you're at home...Fixing only the AMIHOME file";
 			echo $homestate>$AMIHOME
 		fi
@@ -96,10 +100,9 @@ function switchHomemode()
 function macs_check_v1()
 {	
 	matching_macs=0
-	interface=$(route|grep default|awk '{print $8}')
-	ip_pool=$(echo $SYNO_URL|awk -F"." 'BEGIN{OFS="."} {print $1, $2, $3".0/24"}')
+	ip_pool=$(echo ${SYNO_URL%.*:*}.0/24)
 	echo "Scanning hosts in the same network of the Synology NAS..."
-	nmap_scan=$(nmap -sn --disable-arp-ping $ip_pool|awk '/MAC/{print $3}')
+	nmap_scan=$(nmap -sn -sC -sV --disable-arp-ping $ip_pool|awk '/MAC/{print $3}')
 	echo -e "\nHosts found in your network:"
 	for host in $nmap_scan; do
 		echo -e "\n$host"
@@ -114,6 +117,9 @@ function macs_check_v1()
 }
 
 
+
+
+
 #Check for the list of MAC addresses authorized to activate Homemode passed as script arguments
 
 if [ $# -eq 0 ]; then
@@ -125,12 +131,12 @@ fi
 #Check for previous state stored in a file for avoiding continuous SynoAPI calls
 
 if [ -f $AMIHOME ]; then
-	homestate_prev_file=$(<$AMIHOME)
+	previous_homestate_from_file=$(<$AMIHOME)
 else
 	echo "unknown">$AMIHOME
-	homestate_prev_file=$(<$AMIHOME)
+	previous_homestate_from_file=$(<$AMIHOME)
 fi
-echo "[Previous State] Am I home? $homestate_prev_file" 
+echo "[Previous State] Am I home? $previous_homestate_from_file" 
 echo "MAC addresses authorized to enable the Homemode: $MACS"
 
 
@@ -141,13 +147,13 @@ macs_check_v1
 echo -e "\nTotal matches: $matching_macs"
 
 if [ "$matching_macs" -eq "0" ]; then
-	homestate="false"
+	homestate="\"on\":false"
 elif [ "$matching_macs" -gt "0" ]; then
-	homestate="true"
+	homestate="\"on\":true"
 fi
 echo "[Current State] Am I home? $homestate"
 
-if [ $homestate_prev_file != $homestate ]; then
+if [ $previous_homestate_from_file != $homestate ]; then
 	echo "Switching Home Mode according to the [Current State]..."
 	switchHomemode
 else
@@ -155,3 +161,4 @@ else
 fi
 
 exit 0;
+
