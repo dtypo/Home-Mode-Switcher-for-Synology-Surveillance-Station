@@ -110,7 +110,7 @@ function macs_check_v1()
 		do
 			if [ "$host" == "$authorized_mac" ]; then
 				let "matching_macs+=1"
-				echo "This MAC address matches with one of the authorized MAC addresses!"
+				echo -e "This MAC address matches with one of the authorized MAC addresses!"
 			fi
 		done
 	done
@@ -136,7 +136,7 @@ else
 	echo "unknown">$AMIHOME
 	previous_homestate_from_file=$(<$AMIHOME)
 fi
-echo "[Previous State] Am I home? $previous_homestate_from_file" 
+echo -e "\n[Previous State] Am I home? $previous_homestate_from_file" 
 echo "MAC addresses authorized to enable the Homemode: $MACS"
 
 
@@ -161,4 +161,3 @@ else
 fi
 
 exit 0;
-
