@@ -102,7 +102,7 @@ function macs_check_v1()
 	matching_macs=0
 	ip_pool=$(echo ${SYNO_URL%.*:*}.0/24)
 	echo "Scanning hosts in the same network of the Synology NAS..."
-	nmap_scan=$(nmap -sn -sC -sV --disable-arp-ping $ip_pool|awk '/MAC/{print $3}')
+	nmap_scan=$(nmap -sn --disable-arp-ping $ip_pool|awk '/MAC/{print $3}')
 	echo -e "\nHosts found in your network:"
 	for host in $nmap_scan; do
 		echo -e "\n$host"
@@ -115,8 +115,6 @@ function macs_check_v1()
 		done
 	done
 }
-
-
 
 
 
