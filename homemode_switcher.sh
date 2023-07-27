@@ -15,7 +15,6 @@ SYNO_SECRET_KEY="";
 
 ARGUMENTS=$@;
 MACS=$(echo $ARGUMENTS | tr '[:lower:]' '[:upper:]');
-
 ID="$RANDOM";
 COOKIESFILE="$0_cookies_$ID";
 AMIHOME="$0_AMIHOME";
@@ -123,15 +122,12 @@ function macs_check_v1()
 
 
 #Check for the list of MAC addresses authorized to activate Homemode passed as script arguments
-
 if [ $# -eq 0 ]; then
 	echo "MAC address or addresses missing";
 	exit 1;
 fi
 
-
 #Check for previous state stored in a file for avoiding continuous SynoAPI calls
-
 if [ -f $AMIHOME ]; then
 	previous_homestate_from_file=$(<$AMIHOME);
 else
@@ -141,25 +137,20 @@ fi
 echo -e "\n[Previous State] Am I home? $previous_homestate_from_file";
 echo "MAC addresses authorized to enable the Homemode: $MACS";
 
-
 #Check for currently active MAC addresses and comparison with the provided authorized MACs
-
 macs_check_v1;
 
 echo -e "\nTotal matches: $matching_macs";
-
 if [ "$matching_macs" -eq "0" ]; then
 	homestate="\"on\":false";
 elif [ "$matching_macs" -gt "0" ]; then
 	homestate="\"on\":true";
 fi
 echo "[Current State] Am I home? $homestate";
-
 if [ $previous_homestate_from_file != $homestate ]; then
 	echo "Switching Home Mode according to the [Current State]...";
 	switchHomemode;
 else
 	echo "No changes made";
 fi
-
 exit 0;
