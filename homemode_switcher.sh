@@ -15,6 +15,7 @@ SYNO_SECRET_KEY="";
 
 ARGUMENTS=$@;
 MACS=$(echo $ARGUMENTS | tr '[:lower:]' '[:upper:]');
+
 ID="$RANDOM";
 COOKIESFILE="$0_cookies_$ID";
 AMIHOME="$0_AMIHOME";
@@ -105,18 +106,19 @@ function macs_check_v1()
 	while [ -z "$nmap_scan" ];
 	do
 		nmap_scan=$(timeout 1m nmap -sn --disable-arp-ping $ip_pool|awk '/MAC/{print $3}');
-		echo -e "\nHosts found in your network:";
-		for host in $nmap_scan; do
-			echo -e "\n$host";
-			for authorized_mac in $MACS
-			do
-				if [ "$host" == "$authorized_mac" ]; then
-					let "matching_macs+=1";
-					echo -e "This MAC address matches with one of the authorized MAC addresses!";
-				fi
-			done
+	done
+	echo -e "\nHosts found in your network:";
+	for host in $nmap_scan; do
+		echo -e "\n$host";
+		for authorized_mac in $MACS
+		do
+			if [ "$host" == "$authorized_mac" ]; then
+				let "matching_macs+=1";
+				echo -e "This MAC address matches with one of the authorized MAC addresses!";
+			fi
 		done
 	done
+	
 }
 
 
