@@ -89,11 +89,12 @@ function switchHomemode()
 		fi
 		logout_output=$(wget -q --load-cookies $COOKIESFILE -O- "http://${SYNO_URL}/webapi/auth.cgi?api=SYNO.API.Auth&method=Logout&version=1");
 		if [ "$logout_output" = '{"success":true}' ]; then echo "Logout to Synology successfull"; fi
+		rm $COOKIESFILE;
 	else
 		echo "Login to Synology went wrong";
+		rm $COOKIESFILE;
 		exit 1;
 	fi
-	rm $COOKIESFILE;
 }
 
 
